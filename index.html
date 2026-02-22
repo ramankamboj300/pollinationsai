@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator | CategoryScreen Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #f472b6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #f472b6, #fb923c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .img-reveal {
+            animation: reveal 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes reveal {
+            from { opacity: 0; transform: scale(0.98); filter: blur(10px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                rgba(255,255,255,0.03) 0%,
+                rgba(255,255,255,0.08) 50%,
+                rgba(255,255,255,0.03) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.1s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .pulse-dots span {
+            animation: dotPulse 1.2s infinite;
+            opacity: 0.25;
+        }
+        .pulse-dots span:nth-child(2){ animation-delay: .15s; }
+        .pulse-dots span:nth-child(3){ animation-delay: .3s; }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: translateY(0); opacity: .25; }
+            50% { transform: translateY(-3px); opacity: 1; }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <header class="w-full max-w-4xl text-center mb-10">
+        <h1 class="text-4xl md:text-5xl font-bold gradient-text mb-2">
+            Pollinations AI Engine
+        </h1>
+        <p class="text-slate-400">CategoryScreen Pro — Premium Generation Interface</p>
+    </header>
+
+    <main class="w-full max-w-2xl glass rounded-3xl p-6 md:p-8 shadow-2xl">
+        <div class="space-y-6">
+            <div>
+                <label for="prompt" class="block text-sm font-medium text-slate-300 mb-2">Describe your imagination:</label>
+                <textarea 
+                    id="prompt" 
+                    rows="4" 
+                    class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all placeholder-slate-600"
+                    placeholder="E.g. A majestic lion made of celestial stars, high resolution..."
+                ></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="size" class="block text-sm font-medium text-slate-300 mb-2">Image Resolution:</label>
+                    <select
+                        id="size"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all"
+                    >
+                        <option value="512x512">512 × 512 (Fast)</option>
+                        <option value="768x768">768 × 768 (Balanced)</option>
+                        <option value="1024x1024" selected>1024 × 1024 (HD)</option>
+                        <option value="1024x1536">1024 × 1536 (Portrait)</option>
+                        <option value="1536x1024">1536 × 1024 (Landscape)</option>
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-2">Larger sizes may take longer to process.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Auth Status</span>
+                        <span class="text-xs text-green-400 flex items-center gap-1">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Active
+                        </span>
+                    </div>
+                    <div class="bg-slate-900/40 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Model</span>
+                        <span class="text-xs text-pink-400">Flux Schnell</span>
+                    </div>
+                </div>
+            </div>
+
+            <button 
+                id="generateBtn"
+                onclick="generateImage()"
+                class="w-full bg-gradient-to-r from-pink-600 to-orange-500 hover:from-pink-500 hover:to-orange-400 text-white font-semibold py-4 rounded-xl shadow-lg transform active:scale-[0.98] transition-all flex items-center justify-center space-x-3"
+            >
+                <span id="btnText">Generate Masterpiece</span>
+                <div id="btnLoader" class="loader hidden"></div>
+            </button>
+        </div>
+
+        <!-- Result Container -->
+        <div id="resultContainer" class="mt-8 hidden">
+            <div id="imgWrapper" class="relative group rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 min-h-[400px] flex items-center justify-center">
+                
+                <div id="generatingOverlay" class="absolute inset-0 hidden z-10">
+                    <div class="absolute inset-0 shimmer"></div>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
+                        <div class="flex items-center gap-3">
+                            <div class="loader"></div>
+                            <div class="text-sm text-slate-100 font-semibold">
+                                Rendering your vision
+                                <span class="pulse-dots inline-flex gap-1 ml-1">
+                                    <span>.</span><span>.</span><span>.</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-300/90 px-4 text-center">
+                            The engine is processing — please wait and do not refresh.
+                        </div>
+                    </div>
+                </div>
+
+                <img id="generatedImage" src="" alt="AI Generated" class="w-full h-auto opacity-0">
+
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 z-20">
+                    <button id="downloadBtn" class="bg-white text-black font-bold px-8 py-3 rounded-full hover:bg-pink-100 transition-colors shadow-xl">
+                        Download Image
+                    </button>
+                    <button id="tabBtn" class="text-white text-sm underline opacity-80 hover:opacity-100">
+                        Open in Full View
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusMessage" class="mt-4 p-4 rounded-xl hidden text-sm text-center">
+        </div>
+    </main>
+
+    <footer class="mt-auto pt-10 text-slate-500 text-xs text-center">
+        <p>Powered by gen.pollinations.ai • CategoryScreen Pro v2.0</p>
+    </footer>
+
+    <script>
+        const API_KEY = "sk_O6lfLVLHm7MaJqDXNxaaCU6EvjRXO60w";
+        const STORAGE_KEY = "pollinations_last_image_state_v1";
+
+        function saveLastState(state) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+        }
+        function loadLastState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (_) { return null; }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            const last = loadLastState();
+            if (!last || !last.url) return;
+
+            const resultContainer = document.getElementById('resultContainer');
+            const generatedImage = document.getElementById('generatedImage');
+            const promptInput = document.getElementById('prompt');
+            const sizeSelect = document.getElementById('size');
+
+            resultContainer.classList.remove('hidden');
+            generatedImage.src = last.url;
+            generatedImage.classList.add('img-reveal');
+            generatedImage.classList.remove('opacity-0');
+
+            if (last.prompt) promptInput.value = last.prompt;
+            if (last.size) sizeSelect.value = last.size;
+
+            document.getElementById('downloadBtn').onclick = () => {
+                const a = document.createElement('a');
+                a.href = last.url;
+                a.download = last.filename || `flux-gen.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+            document.getElementById('tabBtn').onclick = () => window.open(last.url, '_blank');
+        });
+
+        async function generateImage() {
+            const promptInput = document.getElementById('prompt');
+            const prompt = promptInput.value.trim();
+
+            const sizeSelect = document.getElementById('size');
+            const [width, height] = sizeSelect.value.split('x').map(Number);
+
+            const resultContainer = document.getElementById('resultContainer');
+            const generatedImage = document.getElementById('generatedImage');
+            const statusMessage = document.getElementById('statusMessage');
+            const generatingOverlay = document.getElementById('generatingOverlay');
+
+            if (!prompt) {
+                showStatus("Please enter a prompt to continue!", "error");
+                return;
+            }
+
+            setLoading(true);
+            statusMessage.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            generatingOverlay.classList.remove('hidden');
+
+            const seed = Math.floor(Math.random() * 1000000);
+            const fetchUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?model=flux&width=${width}&height=${height}&seed=${seed}&nologo=true`;
+
+            try {
+                const tempImg = new Image();
+                const timeoutId = setTimeout(() => {
+                    tempImg.onload = null;
+                    tempImg.onerror = null;
+                    showStatus("Request timeout! The server might be busy.", "error");
+                    generatingOverlay.classList.add('hidden');
+                    setLoading(false);
+                }, 60000);
+
+                tempImg.onload = () => {
+                    clearTimeout(timeoutId);
+                    generatedImage.src = fetchUrl;
+                    generatedImage.classList.add('img-reveal');
+                    generatedImage.classList.remove('opacity-0');
+
+                    const filename = `flux-gen-${seed}.jpg`;
+
+                    document.getElementById('downloadBtn').onclick = () => {
+                        const a = document.createElement('a');
+                        a.href = fetchUrl;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    };
+
+                    document.getElementById('tabBtn').onclick = () => window.open(fetchUrl, '_blank');
+
+                    saveLastState({
+                        url: fetchUrl,
+                        prompt,
+                        size: sizeSelect.value,
+                        seed,
+                        filename: filename,
+                        ts: Date.now()
+                    });
+
+                    generatingOverlay.classList.add('hidden');
+                    setLoading(false);
+                };
+
+                tempImg.onerror = async () => {
+                    clearTimeout(timeoutId);
+                    try {
+                        const response = await fetch(fetchUrl, {
+                            method: 'GET',
+                            headers: { 'Authorization': `Bearer ${API_KEY}` }
+                        });
+
+                        if (!response.ok) throw new Error(`Status ${response.status}`);
+
+                        const blob = await response.blob();
+                        const objUrl = URL.createObjectURL(blob);
+
+                        generatedImage.src = objUrl;
+                        generatedImage.classList.add('img-reveal');
+                        generatedImage.classList.remove('opacity-0');
+
+                        document.getElementById('downloadBtn').onclick = () => {
+                            const a = document.createElement('a');
+                            a.href = objUrl;
+                            a.download = `flux-gen-${seed}.jpg`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                        };
+                        document.getElementById('tabBtn').onclick = () => window.open(objUrl, '_blank');
+
+                        saveLastState({
+                            url: objUrl,
+                            prompt,
+                            size: sizeSelect.value,
+                            seed,
+                            filename: `flux-gen-${seed}.jpg`,
+                            ts: Date.now()
+                        });
+
+                        generatingOverlay.classList.add('hidden');
+                        setLoading(false);
+                    } catch (e) {
+                        showStatus("Authentication Error: Unable to reach the generation engine.", "error");
+                        generatingOverlay.classList.add('hidden');
+                        setLoading(false);
+                    }
+                };
+
+                tempImg.src = fetchUrl;
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, "error");
+                generatingOverlay.classList.add('hidden');
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            btn.disabled = isLoading;
+            btnText.textContent = isLoading ? "Processing..." : "Generate Masterpiece";
+            btnLoader.classList.toggle('hidden', !isLoading);
+        }
+
+        function showStatus(msg, type) {
+            const status = document.getElementById('statusMessage');
+            status.textContent = msg;
+            status.classList.remove('hidden', 'bg-red-500/10', 'text-red-400', 'bg-blue-500/10', 'text-blue-400');
+            status.classList.add(type === "error" ? 'bg-red-500/10' : 'bg-blue-500/10');
+            status.classList.add(type === "error" ? 'text-red-400' : 'text-blue-400');
+            status.classList.add('border', type === "error" ? 'border-red-500/20' : 'border-blue-500/20');
+        }
+    </script>
+</body>
+</html>
